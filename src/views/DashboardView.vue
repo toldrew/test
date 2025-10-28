@@ -25,13 +25,13 @@ const stats = ref([
 <style scoped lang="scss">
 .dashboard {
   h1 {
-    color: #333;
+    color: var(--color-text-primary);
     margin-bottom: 1rem;
   }
 
   p {
     margin-bottom: 2rem;
-    color: #666;
+    color: var(--color-text-secondary);
   }
 }
 
@@ -43,21 +43,27 @@ const stats = ref([
 }
 
 .stat-card {
-  background: #f8f9fa;
+  background: var(--color-background-alt);
   padding: 2rem;
   border-radius: 8px;
   text-align: center;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--color-border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
 
   .stat-value {
     font-size: 2rem;
     font-weight: bold;
-    color: #42b983;
+    color: var(--color-primary);
     margin-bottom: 0.5rem;
   }
 
   .stat-label {
-    color: #666;
+    color: var(--color-text-secondary);
     font-size: 0.9rem;
   }
 }
