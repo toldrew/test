@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import BaseButton from '@/components/ui/BaseButton.vue'
 
 const router = useRouter()
 
@@ -13,7 +14,9 @@ const goHome = () => {
     <h1>404</h1>
     <h2>Page Not Found</h2>
     <p>The page you are looking for doesn't exist or has been moved.</p>
-    <button @click="goHome" class="btn-home">Go to Home</button>
+    <BaseButton variant="primary" @click="goHome">
+      Go to Home
+    </BaseButton>
   </div>
 </template>
 
@@ -24,36 +27,21 @@ const goHome = () => {
 
   h1 {
     font-size: 6rem;
-    color: #42b983;
+    color: var(--color-primary);
     margin-bottom: 1rem;
     font-weight: bold;
   }
 
   h2 {
     font-size: 2rem;
-    color: #333;
+    color: var(--color-text-primary);
     margin-bottom: 1rem;
   }
 
   p {
-    color: #666;
+    color: var(--color-text-secondary);
     margin-bottom: 2rem;
     font-size: 1.1rem;
-  }
-
-  .btn-home {
-    background-color: #42b983;
-    color: white;
-    border: none;
-    padding: 0.75rem 2rem;
-    font-size: 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-
-    &:hover {
-      background-color: #35a372;
-    }
   }
 }
 </style>

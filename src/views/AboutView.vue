@@ -32,24 +32,24 @@ const buildDate = ref(new Date().toLocaleDateString())
 <style scoped lang="scss">
 .about {
   h1 {
-    color: #333;
+    color: var(--color-text-primary);
     margin-bottom: 1rem;
   }
 
   p {
     margin-bottom: 2rem;
-    color: #666;
+    color: var(--color-text-secondary);
   }
 }
 
 .info-section {
-  background: #f8f9fa;
+  background: var(--color-background-alt);
   padding: 2rem;
   border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--color-border);
 
   h2 {
-    color: #333;
+    color: var(--color-text-primary);
     margin-bottom: 1.5rem;
     font-size: 1.5rem;
   }
@@ -61,11 +61,11 @@ const buildDate = ref(new Date().toLocaleDateString())
     
     dt {
       font-weight: bold;
-      color: #333;
+      color: var(--color-text-primary);
     }
     
     dd {
-      color: #666;
+      color: var(--color-text-secondary);
       margin: 0;
     }
   }
