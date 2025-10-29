@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useTournamentStore } from '@/stores/tournamentStore'
+import { exportToPDF, exportToWord, printSchedule } from '@/services/exporter'
+import { useToast } from '@/composables/useToast'
 
 interface Props {
   tournamentId: string
@@ -13,6 +15,10 @@ const emit = defineEmits<{
 }>()
 
 const store = useTournamentStore()
+const { success, error } = useToast()
+
+const isExporting = ref(false)
+const exportProgress = ref(0)
 
 const tournament = computed(() => store.getTournamentById(props.tournamentId))
 
@@ -81,10 +87,108 @@ function handleEditMatch(matchId: string) {
 function handleEnterResult(matchId: string) {
   emit('enter-result', matchId)
 }
+
+async function handleExportPDF() {
+  if (!tournament.value) return
+  
+  isExporting.value = true
+  exportProgress.value = 0
+  
+  try {
+    await exportToPDF({
+      tournament: tournament.value,
+      teams: store.currentUserTeams,
+      getTeamName,
+      formatDate,
+      onProgress: (progress) => {
+        exportProgress.value = progress
+      }
+    })
+    success('PDF успешно экспортирован')
+  } catch (err) {
+    error('Ошибка при экспорте PDF')
+    console.error(err)
+  } finally {
+    isExporting.value = false
+    exportProgress.value = 0
+  }
+}
+
+async function handleExportWord() {
+  if (!tournament.value) return
+  
+  isExporting.value = true
+  exportProgress.value = 0
+  
+  try {
+    await exportToWord({
+      tournament: tournament.value,
+      teams: store.currentUserTeams,
+      getTeamName,
+      formatDate,
+      onProgress: (progress) => {
+        exportProgress.value = progress
+      }
+    })
+    success('Word документ успешно экспортирован')
+  } catch (err) {
+    error('Ошибка при экспорте Word документа')
+    console.error(err)
+  } finally {
+    isExporting.value = false
+    exportProgress.value = 0
+  }
+}
+
+function handlePrint() {
+  printSchedule()
+}
 </script>
 
 <template>
   <div v-if="tournament" class="tournament-schedule">
+    <!-- Export Actions Bar -->
+    <div class="export-actions">
+      <div class="export-actions-left">
+        <h2>Расписание турнира</h2>
+      </div>
+      <div class="export-actions-right">
+        <button
+          class="export-btn export-pdf"
+          :disabled="isExporting"
+          @click="handleExportPDF"
+          title="Экспорт в PDF"
+        >
+          <span class="btn-icon">📄</span>
+          <span class="btn-text">Экспорт в PDF</span>
+        </button>
+        <button
+          class="export-btn export-word"
+          :disabled="isExporting"
+          @click="handleExportWord"
+          title="Экспорт в Word"
+        >
+          <span class="btn-icon">📝</span>
+          <span class="btn-text">Экспорт в Word</span>
+        </button>
+        <button
+          class="export-btn export-print"
+          :disabled="isExporting"
+          @click="handlePrint"
+          title="Печать"
+        >
+          <span class="btn-icon">🖨️</span>
+          <span class="btn-text">Печать</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div v-if="isExporting" class="export-loading">
+      <div class="loading-spinner"></div>
+      <p>Экспорт... {{ Math.round(exportProgress) }}%</p>
+    </div>
+
     <div v-for="{ round, matches } in matchesByRound" :key="round.id" class="round-section">
       <div class="round-header">
         <h3 class="round-title">{{ round.name }}</h3>
@@ -170,6 +274,185 @@ function handleEnterResult(matchId: string) {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  animation: fadeIn 0.5s ease-in-out;
+  position: relative;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.export-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--color-bg-primary, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  animation: slideDown 0.4s ease-out;
+
+  :global(.dark) & {
+    background: var(--color-bg-primary-dark, #1a1a1a);
+    border-color: var(--color-border-dark, #333);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--color-text-primary, #111);
+
+    :global(.dark) & {
+      color: var(--color-text-primary-dark, #f9fafb);
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.export-actions-left {
+  flex: 1;
+}
+
+.export-actions-right {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-text-primary, #111);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-icon {
+    font-size: 1.125rem;
+  }
+
+  &.export-pdf:hover:not(:disabled) {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+    color: #ef4444;
+  }
+
+  &.export-word:hover:not(:disabled) {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+    color: #3b82f6;
+  }
+
+  &.export-print:hover:not(:disabled) {
+    border-color: var(--color-primary, #6366f1);
+    background: rgba(99, 102, 241, 0.05);
+    color: var(--color-primary, #6366f1);
+  }
+
+  :global(.dark) & {
+    background: var(--color-bg-secondary-dark, #262626);
+    border-color: var(--color-border-dark, #404040);
+    color: var(--color-text-primary-dark, #f9fafb);
+
+    &:hover:not(:disabled) {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    &.export-pdf:hover:not(:disabled) {
+      border-color: #f87171;
+      background: rgba(248, 113, 113, 0.1);
+      color: #f87171;
+    }
+
+    &.export-word:hover:not(:disabled) {
+      border-color: #60a5fa;
+      background: rgba(96, 165, 250, 0.1);
+      color: #60a5fa;
+    }
+
+    &.export-print:hover:not(:disabled) {
+      border-color: var(--color-primary-dark, #818cf8);
+      background: rgba(129, 140, 248, 0.1);
+      color: var(--color-primary-dark, #818cf8);
+    }
+  }
+}
+
+.export-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+
+  p {
+    color: white;
+    font-size: 1.125rem;
+    font-weight: 500;
+    margin: 0;
+  }
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .round-section {
@@ -451,6 +734,26 @@ function handleEnterResult(matchId: string) {
 }
 
 @media (max-width: 768px) {
+  .export-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+
+    h2 {
+      font-size: 1.25rem;
+    }
+  }
+
+  .export-actions-right {
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .export-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
   .match-teams {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -484,6 +787,71 @@ function handleEnterResult(matchId: string) {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+}
+
+// Print styles
+@media print {
+  .export-actions,
+  .export-loading,
+  .match-actions {
+    display: none !important;
+  }
+
+  .tournament-schedule {
+    gap: 1.5rem;
+  }
+
+  .round-section {
+    page-break-inside: avoid;
+    border: 1px solid #ddd;
+    box-shadow: none;
+  }
+
+  .match-card {
+    page-break-inside: avoid;
+    border: 1px solid #ddd;
+    box-shadow: none;
+    margin-bottom: 0.5rem;
+  }
+
+  .round-header {
+    border-bottom: 2px solid #333;
+  }
+
+  .round-title {
+    color: #000;
+  }
+
+  .team-name,
+  .info-value {
+    color: #000;
+  }
+
+  .status-badge {
+    border: 1px solid #333;
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .tournament-schedule,
+  .export-actions,
+  .export-loading,
+  .match-card,
+  .export-btn,
+  .action-btn {
+    animation: none;
+    transition: none;
+  }
+
+  .export-btn:hover:not(:disabled),
+  .action-btn:hover {
+    transform: none;
+  }
+
+  .loading-spinner {
+    animation: none;
   }
 }
 </style>
