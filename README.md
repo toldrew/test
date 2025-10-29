@@ -12,6 +12,9 @@ A modern Vue 3 application scaffolded with Vite, TypeScript, and essential tooli
 - 🗃️ **Pinia** - Intuitive state management
 - 📏 **ESLint + Prettier** - Code quality and consistent formatting
 - 📁 **Organized Structure** - Logical directory organization for scalability
+- 📄 **Export Functionality** - PDF, Word, and Print support for schedules
+- 🎭 **Animations** - Smooth entrance and hover effects with reduced-motion support
+- 📱 **Responsive Design** - Optimized for mobile, tablet, and desktop
 
 ## Project Structure
 
@@ -132,6 +135,56 @@ This client-side implementation is suitable for:
 - Local/offline applications
 - Personal projects with non-sensitive data
 - Demos and proof-of-concepts
+
+## Export Functionality
+
+The application provides robust export capabilities for tournament schedules:
+
+### Supported Export Formats
+
+1. **PDF Export** - Generates a formatted PDF document with tournament details, rounds, and matches
+2. **Word Export** - Creates a .docx file with structured tables for easy editing
+3. **Print** - Browser-native printing with optimized print stylesheets
+
+### Using Export Features
+
+To export a tournament schedule:
+
+1. Navigate to a tournament detail page
+2. Use the export action bar at the top of the schedule
+3. Choose your preferred export format:
+   - **Экспорт в PDF** - Download as PDF
+   - **Экспорт в Word** - Download as Word document
+   - **Печать** - Open print dialog
+
+### Export Features
+
+- **Localization** - All dates formatted in ru-RU locale
+- **Theme Colors** - Exports use application theme colors for branding
+- **Complete Data** - Includes tournament name, type, dates, rounds, matches, scores, and statuses
+- **Progress Feedback** - Loading overlay with progress indicator during export
+- **Error Handling** - Toast notifications for success/failure
+
+### Implementation Details
+
+The export functionality is implemented in `src/services/exporter.ts` using:
+- `jspdf` + `jspdf-autotable` for PDF generation
+- `docx` package for Word document creation
+- Print media queries for optimized print output
+
+### Performance Considerations
+
+- **Client-side Processing** - All exports are generated in the browser
+- **Large Tournaments** - Very large tournaments (100+ matches) may take a few seconds to export
+- **Memory Usage** - Export operations load all data into memory temporarily
+- **Browser Compatibility** - Works in all modern browsers (Chrome, Firefox, Safari, Edge)
+
+### Limitations
+
+- Limited Cyrillic font support in PDFs (uses built-in fonts)
+- Complex formatting in Word exports may not match exactly with advanced Word features
+- Print output depends on browser's print implementation
+- No server-side storage of exported documents
 
 ## Configuration
 

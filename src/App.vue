@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import AuthModal from '@/components/AuthModal.vue'
+import ToastNotification from '@/components/ToastNotification.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -80,6 +81,7 @@ function closeUserMenu() {
     </main>
 
     <AuthModal v-model="showAuthModal" />
+    <ToastNotification />
   </div>
 </template>
 
@@ -88,6 +90,18 @@ header {
   background-color: #f8f9fa;
   padding: 1rem;
   border-bottom: 1px solid #dee2e6;
+  animation: slideDown 0.5s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .nav {
@@ -107,14 +121,35 @@ header {
     color: #333;
     text-decoration: none;
     font-weight: 500;
-    transition: color 0.2s;
+    transition: all 0.3s ease;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #42b983;
+      transition: width 0.3s ease;
+    }
 
     &:hover {
       color: #42b983;
+      transform: translateY(-2px);
+
+      &::after {
+        width: 100%;
+      }
     }
 
     &.router-link-active {
       color: #42b983;
+
+      &::after {
+        width: 100%;
+      }
     }
   }
 }
@@ -322,5 +357,43 @@ main {
   max-width: 1200px;
   margin: 2rem auto;
   padding: 0 1rem;
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  header {
+    animation: none;
+  }
+
+  .nav-links a {
+    transition: none;
+
+    &::after {
+      transition: none;
+    }
+
+    &:hover {
+      transform: none;
+    }
+  }
+
+  .login-button,
+  .user-button,
+  .cta-button {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+
+  .menu-enter-active,
+  .menu-leave-active {
+    transition: none;
+
+    .menu-content {
+      transition: none;
+    }
+  }
 }
 </style>
