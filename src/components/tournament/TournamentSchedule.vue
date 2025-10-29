@@ -1,0 +1,489 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useTournamentStore } from '@/stores/tournamentStore'
+
+interface Props {
+  tournamentId: string
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<{
+  'edit-match': [matchId: string]
+  'enter-result': [matchId: string]
+}>()
+
+const store = useTournamentStore()
+
+const tournament = computed(() => store.getTournamentById(props.tournamentId))
+
+const matchesByRound = computed(() => {
+  if (!tournament.value) return []
+  
+  return tournament.value.rounds.map(round => ({
+    round,
+    matches: round.matches
+  }))
+})
+
+function getTeamName(teamId: string | null): string {
+  if (!teamId) return 'TBD'
+  const team = store.getTeamById(teamId)
+  return team?.name || 'Unknown'
+}
+
+function getTeamLogo(teamId: string | null): string | undefined {
+  if (!teamId) return undefined
+  const team = store.getTeamById(teamId)
+  return team?.logo
+}
+
+function formatDate(date?: Date): string {
+  if (!date) return 'TBD'
+  return new Date(date).toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function getStatusBadgeClass(status: string): string {
+  switch (status) {
+    case 'completed':
+      return 'status-completed'
+    case 'in_progress':
+      return 'status-in-progress'
+    case 'cancelled':
+      return 'status-cancelled'
+    default:
+      return 'status-scheduled'
+  }
+}
+
+function getStatusLabel(status: string): string {
+  switch (status) {
+    case 'completed':
+      return 'Завершен'
+    case 'in_progress':
+      return 'В процессе'
+    case 'cancelled':
+      return 'Отменен'
+    default:
+      return 'Запланирован'
+  }
+}
+
+function handleEditMatch(matchId: string) {
+  emit('edit-match', matchId)
+}
+
+function handleEnterResult(matchId: string) {
+  emit('enter-result', matchId)
+}
+</script>
+
+<template>
+  <div v-if="tournament" class="tournament-schedule">
+    <div v-for="{ round, matches } in matchesByRound" :key="round.id" class="round-section">
+      <div class="round-header">
+        <h3 class="round-title">{{ round.name }}</h3>
+        <span class="round-dates">
+          {{ formatDate(round.startDate) }} - {{ formatDate(round.endDate) }}
+        </span>
+      </div>
+
+      <div class="matches-list">
+        <div
+          v-for="match in matches"
+          :key="match.id"
+          class="match-card"
+        >
+          <div class="match-teams">
+            <div class="team home-team">
+              <div v-if="getTeamLogo(match.homeTeamId)" class="team-logo">
+                <img :src="getTeamLogo(match.homeTeamId)" :alt="getTeamName(match.homeTeamId)" />
+              </div>
+              <span class="team-name">{{ getTeamName(match.homeTeamId) }}</span>
+              <span v-if="match.result" class="team-score">{{ match.result.homeScore }}</span>
+            </div>
+
+            <div class="match-vs">VS</div>
+
+            <div class="team away-team">
+              <span v-if="match.result" class="team-score">{{ match.result.awayScore }}</span>
+              <span class="team-name">{{ getTeamName(match.awayTeamId) }}</span>
+              <div v-if="getTeamLogo(match.awayTeamId)" class="team-logo">
+                <img :src="getTeamLogo(match.awayTeamId)" :alt="getTeamName(match.awayTeamId)" />
+              </div>
+            </div>
+          </div>
+
+          <div class="match-details">
+            <div class="match-info">
+              <div class="info-item">
+                <span class="info-label">📅</span>
+                <span class="info-value">{{ formatDate(match.scheduledDate) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">📍</span>
+                <span class="info-value">{{ match.location || 'TBD' }}</span>
+              </div>
+            </div>
+
+            <div class="match-status">
+              <span class="status-badge" :class="getStatusBadgeClass(match.status)">
+                {{ getStatusLabel(match.status) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="match-actions">
+            <button
+              class="action-btn btn-edit"
+              @click="handleEditMatch(match.id)"
+              title="Редактировать"
+            >
+              ✏️ Редактировать
+            </button>
+            <button
+              v-if="match.status !== 'completed'"
+              class="action-btn btn-result"
+              @click="handleEnterResult(match.id)"
+              title="Введите результат"
+            >
+              ⚽ Введите результат
+            </button>
+          </div>
+
+          <div v-if="match.result?.notes" class="match-notes">
+            <p>{{ match.result.notes }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.tournament-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.round-section {
+  background: var(--color-bg-primary, #fff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.5rem;
+  
+  :global(.dark) & {
+    background: var(--color-bg-primary-dark, #1a1a1a);
+    border-color: var(--color-border-dark, #333);
+  }
+}
+
+.round-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--color-border, #e5e7eb);
+  
+  :global(.dark) & {
+    border-bottom-color: var(--color-border-dark, #333);
+  }
+}
+
+.round-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-text-primary, #111);
+  
+  :global(.dark) & {
+    color: var(--color-text-primary-dark, #f9fafb);
+  }
+}
+
+.round-dates {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #6b7280);
+  
+  :global(.dark) & {
+    color: var(--color-text-secondary-dark, #9ca3af);
+  }
+}
+
+.matches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.match-card {
+  background: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.2s;
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--color-primary, #6366f1);
+  }
+  
+  :global(.dark) & {
+    background: var(--color-bg-secondary-dark, #262626);
+    border-color: var(--color-border-dark, #404040);
+    
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
+                  0 0 16px rgba(99, 102, 241, 0.2);
+      border-color: var(--color-primary-dark, #818cf8);
+    }
+  }
+}
+
+.match-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  
+  &.home-team {
+    justify-content: flex-start;
+  }
+  
+  &.away-team {
+    justify-content: flex-end;
+  }
+}
+
+.team-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--color-text-primary, #111);
+  
+  :global(.dark) & {
+    color: var(--color-text-primary-dark, #f9fafb);
+  }
+}
+
+.team-score {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary, #6366f1);
+  min-width: 40px;
+  text-align: center;
+  
+  :global(.dark) & {
+    color: var(--color-primary-dark, #818cf8);
+  }
+}
+
+.match-vs {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+  padding: 0.5rem 1rem;
+  background: var(--color-bg-primary, #fff);
+  border-radius: 20px;
+  
+  :global(.dark) & {
+    color: var(--color-text-secondary-dark, #9ca3af);
+    background: var(--color-bg-primary-dark, #1a1a1a);
+  }
+}
+
+.match-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+  
+  :global(.dark) & {
+    border-color: var(--color-border-dark, #404040);
+  }
+}
+
+.match-info {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #6b7280);
+  
+  :global(.dark) & {
+    color: var(--color-text-secondary-dark, #9ca3af);
+  }
+}
+
+.info-label {
+  font-size: 1rem;
+}
+
+.match-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 0.375rem 0.875rem;
+  border-radius: 20px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  
+  &.status-scheduled {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+  }
+  
+  &.status-in-progress {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+  
+  &.status-completed {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+  }
+  
+  &.status-cancelled {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+}
+
+.match-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.action-btn {
+  padding: 0.625rem 1rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--color-bg-primary, #fff);
+  color: var(--color-text-primary, #111);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  &.btn-edit:hover {
+    border-color: var(--color-primary, #6366f1);
+    color: var(--color-primary, #6366f1);
+  }
+  
+  &.btn-result:hover {
+    border-color: #22c55e;
+    color: #22c55e;
+  }
+  
+  :global(.dark) & {
+    background: var(--color-bg-primary-dark, #1a1a1a);
+    border-color: var(--color-border-dark, #404040);
+    color: var(--color-text-primary-dark, #f9fafb);
+    
+    &.btn-edit:hover {
+      border-color: var(--color-primary-dark, #818cf8);
+      color: var(--color-primary-dark, #818cf8);
+    }
+  }
+}
+
+.match-notes {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--color-bg-primary, #fff);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary, #6b7280);
+  border-left: 3px solid var(--color-primary, #6366f1);
+  
+  p {
+    margin: 0;
+  }
+  
+  :global(.dark) & {
+    background: var(--color-bg-primary-dark, #1a1a1a);
+    color: var(--color-text-secondary-dark, #9ca3af);
+    border-left-color: var(--color-primary-dark, #818cf8);
+  }
+}
+
+@media (max-width: 768px) {
+  .match-teams {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .team {
+    &.away-team {
+      justify-content: flex-start;
+    }
+  }
+  
+  .match-vs {
+    justify-self: center;
+  }
+  
+  .match-details {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .match-actions {
+    flex-direction: column;
+    width: 100%;
+    
+    .action-btn {
+      width: 100%;
+    }
+  }
+  
+  .round-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+</style>

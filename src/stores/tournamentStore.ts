@@ -328,6 +328,22 @@ export const useTournamentStore = defineStore('tournament', () => {
   }
 
   /**
+   * Updates match details (date, time, location)
+   */
+  function updateMatch(
+    matchId: string,
+    updates: Partial<Pick<Match, 'scheduledDate' | 'location'>>
+  ): void {
+    const matchData = getMatchById.value(matchId)
+    if (!matchData) return
+
+    const { tournament, match } = matchData
+
+    Object.assign(match, updates, { updatedAt: new Date() })
+    tournament.updatedAt = new Date()
+  }
+
+  /**
    * Records a match result and updates team stats
    */
   function recordMatchResult(matchId: string, result: Omit<MatchResult, 'completedAt'>): void {
@@ -516,6 +532,7 @@ export const useTournamentStore = defineStore('tournament', () => {
     assignTeamsToTournament,
     regenerateTournamentSchedule,
     updateMatchSchedule,
+    updateMatch,
     recordMatchResult,
     setActiveTournament,
     createTournamentGroups,
