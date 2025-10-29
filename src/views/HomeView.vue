@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournamentStore'
 import { useTheme } from '@/composables/useTheme'
 import FeatureCard from '@/components/feature/FeatureCard.vue'
@@ -10,6 +10,7 @@ import TournamentSchedule from '@/components/tournament/TournamentSchedule.vue'
 import MatchEditorModal from '@/components/tournament/MatchEditorModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const store = useTournamentStore()
 const { isDark, toggleTheme } = useTheme()
 
@@ -18,6 +19,19 @@ const showMatchEditor = ref(false)
 const editingMatchId = ref<string | null>(null)
 const focusOnResult = ref(false)
 const latestTournamentId = ref<string | null>(null)
+const showAuthNotification = ref(false)
+
+watch(() => route.query.authRequired, (authRequired) => {
+  if (authRequired === 'true') {
+    showAuthNotification.value = true
+    setTimeout(() => {
+      router.replace({ query: {} })
+    }, 100)
+    setTimeout(() => {
+      showAuthNotification.value = false
+    }, 5000)
+  }
+}, { immediate: true })
 
 // Get latest tournament
 const latestTournament = computed(() => {
@@ -136,6 +150,23 @@ onMounted(() => {
 
 <template>
   <div class="home-view">
+    <!-- Auth Notification -->
+    <Transition name="notification">
+      <div v-if="showAuthNotification" class="auth-notification">
+        <div class="notification-content">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Для доступа к Dashboard необходимо войти в систему</span>
+        </div>
+        <button class="notification-close" @click="showAuthNotification = false">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+            <path d="M15 5L5 15M5 5l10 10" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </Transition>
+
     <!-- Theme Toggle -->
     <button class="theme-toggle" @click="toggleTheme" aria-label="Toggle theme">
       <span v-if="isDark">🌞</span>
@@ -733,6 +764,77 @@ onMounted(() => {
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+// Auth Notification
+.auth-notification {
+  position: fixed;
+  top: 6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(220, 38, 38, 0.2);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 90%;
+  width: 500px;
+
+  :global(.dark) & {
+    background: #7f1d1d;
+    border-color: #991b1b;
+    color: #fca5a5;
+  }
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  span {
+    font-weight: 500;
+  }
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.notification-enter-active,
+.notification-leave-active {
+  transition: all 0.3s ease;
+}
+
+.notification-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
+}
+
+.notification-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-20px);
 }
 
 // Animations
