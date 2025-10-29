@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournamentStore'
-import { useTheme } from '@/composables/useTheme'
 import FeatureCard from '@/components/feature/FeatureCard.vue'
 import BenefitCard from '@/components/feature/BenefitCard.vue'
 import CreateTournamentModal from '@/components/tournament/CreateTournamentModal.vue'
@@ -12,7 +11,6 @@ import MatchEditorModal from '@/components/tournament/MatchEditorModal.vue'
 const router = useRouter()
 const route = useRoute()
 const store = useTournamentStore()
-const { isDark, toggleTheme } = useTheme()
 
 const showCreateModal = ref(false)
 const showMatchEditor = ref(false)
@@ -166,12 +164,6 @@ onMounted(() => {
         </button>
       </div>
     </Transition>
-
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" @click="toggleTheme" aria-label="Toggle theme">
-      <span v-if="isDark">🌞</span>
-      <span v-else>🌙</span>
-    </button>
 
     <!-- Hero Section -->
     <section class="hero-section">
@@ -337,35 +329,6 @@ onMounted(() => {
   
   :global(.dark) & {
     background: var(--color-bg-primary-dark, #0a0a0a);
-  }
-}
-
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 100;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: none;
-  background: var(--color-bg-primary, #fff);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: scale(1.1) rotate(15deg);
-  }
-  
-  :global(.dark) & {
-    background: var(--color-bg-primary-dark, #1a1a1a);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4),
-                0 0 20px rgba(99, 102, 241, 0.3);
   }
 }
 
