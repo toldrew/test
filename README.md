@@ -90,9 +90,48 @@ npm run lint
 The application includes the following routes:
 
 - `/` - Home page
-- `/dashboard` - Dashboard with sample statistics
+- `/dashboard` - Dashboard with tournament management (requires authentication)
+- `/dashboard/tournaments/:id` - Tournament detail view (requires authentication)
 - `/about` - About page with application information
 - `*` - 404 Not Found page (catch-all route)
+
+## Authentication
+
+The application includes a client-side authentication system with the following features:
+
+- User registration with email, password, and optional name
+- Login/logout functionality
+- Password hashing using SHA-256 (via Web Crypto API)
+- Persistent sessions using localStorage
+- Protected routes (Dashboard) requiring authentication
+- Per-user data isolation for tournaments and teams
+
+### Security Considerations
+
+**⚠️ Important: This is a CLIENT-SIDE authentication implementation designed for demonstration and local use only.**
+
+This authentication system:
+- Stores all user data locally in the browser's localStorage
+- Uses client-side password hashing (SHA-256)
+- Has NO server-side validation or security
+- Should NOT be used in production environments with sensitive data
+- Is vulnerable to various attacks (XSS, local storage inspection, etc.)
+
+**For production applications, you should:**
+- Implement proper server-side authentication with secure password hashing (bcrypt, Argon2)
+- Use HTTPS for all communications
+- Implement JWT or session-based authentication with secure cookies
+- Add rate limiting, CSRF protection, and other security measures
+- Never store sensitive data in localStorage
+- Use secure backend APIs for user management and data storage
+- Implement proper input validation and sanitization on the server
+- Consider using established authentication services (Auth0, Firebase Auth, etc.)
+
+This client-side implementation is suitable for:
+- Learning and prototyping
+- Local/offline applications
+- Personal projects with non-sensitive data
+- Demos and proof-of-concepts
 
 ## Configuration
 

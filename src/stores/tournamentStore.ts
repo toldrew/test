@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import { defineStore } from 'pinia'
+import { defineStore, storeToRefs } from 'pinia'
 import type {
   Tournament,
   Team,
@@ -14,6 +14,7 @@ import {
   rescheduleMatches
 } from '@/services/scheduler'
 import { v4 as uuidv4 } from 'uuid'
+import { useAuthStore } from './authStore'
 
 const STORAGE_KEY = 'tournament-store'
 const STORAGE_VERSION = 1
@@ -56,6 +57,10 @@ interface StorageData {
  * ```
  */
 export const useTournamentStore = defineStore('tournament', () => {
+  // Get auth store for user tracking
+  const authStore = useAuthStore()
+  const { currentUserId: authCurrentUserId } = storeToRefs(authStore)
+
   // State
   const tournaments = ref<Record<string, Tournament[]>>({})
   const teams = ref<Record<string, Team[]>>({})
@@ -67,6 +72,20 @@ export const useTournamentStore = defineStore('tournament', () => {
 
   // Load initial state from localStorage
   loadFromStorage()
+
+  // Initialize current user from auth store if authenticated
+  if (authCurrentUserId.value) {
+    currentUserId.value = authCurrentUserId.value
+  }
+
+  // Watch for auth user changes and switch context
+  watch(authCurrentUserId, (newUserId) => {
+    if (newUserId) {
+      switchToUser(newUserId)
+    } else {
+      switchToUser('guest')
+    }
+  })
 
   // Watch for state changes and persist to localStorage
   watch(
@@ -492,6 +511,40 @@ export const useTournamentStore = defineStore('tournament', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } catch (error) {
       console.error('Failed to save tournament store to localStorage:', error)
+    }
+  }
+
+  /**
+   * Switches the current user context
+   * If switching from guest to a new user, migrates guest data
+   */
+  function switchToUser(userId: string): void {
+    const previousUserId = currentUserId.value
+
+    // If switching from guest to a real user for the first time, migrate guest data
+    if (previousUserId === 'guest' && userId !== 'guest') {
+      const guestTournaments = tournaments.value['guest']
+      const guestTeams = teams.value['guest']
+
+      if (guestTournaments && guestTournaments.length > 0 && !tournaments.value[userId]) {
+        tournaments.value[userId] = guestTournaments.map(t => ({
+          ...t,
+          userId
+        }))
+        delete tournaments.value['guest']
+      }
+
+      if (guestTeams && guestTeams.length > 0 && !teams.value[userId]) {
+        teams.value[userId] = guestTeams
+        delete teams.value['guest']
+      }
+    }
+
+    currentUserId.value = userId
+
+    // Clear active tournament when switching users
+    if (previousUserId !== userId) {
+      activeTournamentId.value = null
     }
   }
 
